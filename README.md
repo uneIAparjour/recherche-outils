@@ -39,7 +39,7 @@ Les données sont chargées depuis le CSV du dépôt [`uneIAparjour/base`](https
 https://raw.githubusercontent.com/uneIAparjour/base/main/base-uneiaparjour.csv
 ```
 
-Mise à jour automatique chaque nuit via le workflow `nightly-update.yml` du dépôt `uneIAparjour/base`.
+Mise à jour automatique chaque nuit via le workflow `nightly-update.yml` du dépôt[`uneIAparjour/base`]([https://www.uneiaparjour.fr](https://github.com/uneIAparjour/base))
 
 ## Compatibilité
 
