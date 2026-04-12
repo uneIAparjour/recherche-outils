@@ -26,7 +26,7 @@ Les données sont chargées depuis le CSV du dépôt [`uneIAparjour/base`](https
 
 1. Copier `recherche-overlay.css` et `recherche-overlay.js` dans le dossier du thème enfant Kenta :
    ```
-   wp-content/themes/kenta-child/
+   wp-content/themes/kenta-artistic-blog/
    ```
 
 2. Ajouter le contenu de `functions-snippet.php` dans `functions.php` du thème enfant.
