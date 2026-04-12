@@ -4,15 +4,18 @@ Moteur de recherche multi-catégories pour [uneiaparjour.fr](https://www.uneiapa
 
 ## Fonctionnement
 
-Un overlay full-screen s'ouvre au clic sur la loupe du thème WordPress (Kenta Artistic Blog). Il permet de rechercher parmi les 1 000+ outils IA référencés sur le site, avec :
+Un overlay plein écran s'ouvre au clic sur la loupe du thème WordPress (Kenta Artistic Blog). Il permet de rechercher parmi toutes les publications d'applications référencées sur le site, avec :
 
 - **Recherche textuelle** sur le titre et la description, avec surbrillance des occurrences
-- **Filtrage par catégories** (tags cliquables, multi-sélection)
-- **Logique OU / ET** entre les catégories sélectionnées (visible dès 2 tags actifs)
+- **Recherche multi-mots** : chaque mot saisi doit être présent (logique ET implicite)
+- **Insensibilité aux accents** : "edition" trouve "édition" et inversement
+- **Tolérance au pluriel** : "image" trouve "images" et inversement
+- **Filtrage par catégories** (tags cliquables, multi-sélection, triés alphabétiquement)
+- **Logique ET / OU** entre les catégories sélectionnées (visible dès 2 tags actifs, ET par défaut)
 - **Pagination** par blocs de 48 résultats
 - Clic sur un tag dans une carte → active immédiatement ce filtre
 
-Les données sont chargées depuis le CSV du dépôt [`uneIAparjour/base`](https://github.com/uneIAparjour/base) (mis à jour automatiquement chaque nuit).
+Les données sont chargées à l'ouverture depuis le CSV du dépôt [`uneIAparjour/base`](https://github.com/uneIAparjour/base) (mis à jour automatiquement chaque nuit).
 
 ## Fichiers
 
@@ -24,14 +27,11 @@ Les données sont chargées depuis le CSV du dépôt [`uneIAparjour/base`](https
 
 ## Installation
 
-1. Copier `recherche-overlay.css` et `recherche-overlay.js` dans le dossier du thème enfant Kenta :
-   ```
-   wp-content/themes/kenta-artistic-blog/
-   ```
+1. Copier `recherche-overlay.css` et `recherche-overlay.js` à la racine du dossier du thème enfant, pour uneIAparjour.fr : wp-content/themes/kenta-artistic-blog
 
-2. Ajouter le contenu de `functions-snippet.php` dans `functions.php` du thème enfant.
+2. Ajouter le contenu de `functions-snippet.php` à la fin de `functions.php` du thème enfant.
 
-3. Vérifier que le thème enfant est bien actif dans WordPress (Apparence → Thèmes).
+3. Vider le cache après chaque mise à jour des fichiers JS/CSS. Pour uneIaparjour.fr, depuis WP Super Cache.
 
 ## Source de données
 
@@ -39,13 +39,16 @@ Les données sont chargées depuis le CSV du dépôt [`uneIAparjour/base`](https
 https://raw.githubusercontent.com/uneIAparjour/base/main/base-uneiaparjour.csv
 ```
 
-Mise à jour automatique chaque nuit via le workflow `nightly-update.yml` du dépôt[`uneIAparjour/base`]([https://www.uneiaparjour.fr](https://github.com/uneIAparjour/base))
+Mise à jour automatique chaque nuit via le workflow `nightly-update.yml` du dépôt [`uneIAparjour/base`](https://github.com/uneIAparjour/base).
 
-## Compatibilité
+## Compatibilité et points techniques
 
-- Testé avec le thème Kenta Artistic Blog (WP Moose)
-- Le sélecteur de la loupe est détecté automatiquement parmi plusieurs candidats connus du thème
-- Si le bouton est injecté dynamiquement, un `MutationObserver` prend le relais (timeout 5s)
+- Thème : **Kenta Artistic Blog** (WP Moose)
+- Sélecteur de la loupe : `.kenta-search-button` (classe native du thème)
+- Interception via écoute `document` en phase de capture (`true`) pour passer avant le système `kenta-toggleable` natif, qui ouvre normalement `#kenta-search-modal`
+- La modal Kenta est refermée immédiatement via `setTimeout` si elle s'ouvre en parallèle
+- PapaParse chargé via CDN (cdnjs.cloudflare.com), en footer
+- **Cache** : le cache doit être vidé après chaque déploiement d'une nouvelle version JS
 
 ## Licence
 
