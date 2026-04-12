@@ -17,6 +17,9 @@
 
   // Sélecteurs possibles pour la loupe Kenta (ordre de priorité)
   const SEARCH_BTN_SELECTORS = [
+    '.kenta-search-button',
+    'a:has(.fa-magnifying-glass)',
+    'button:has(.fa-magnifying-glass)',
     '.kenta-action-search',
     '.kenta-header-search',
     '[data-element="search"]',
@@ -30,7 +33,7 @@
   let allData    = [];
   let filtered   = [];
   let activeTags = new Set();
-  let logic      = 'or';   // 'or' | 'and'
+  let logic      = 'and';  // 'or' | 'and'
   let query      = '';
   let page       = 0;
   let loaded     = false;
@@ -44,32 +47,27 @@
 
   // ── Trouver et intercepter la loupe Kenta ─────────────────
   function hookSearchButton() {
-    // On essaie d'abord au DOMContentLoaded, puis on observe les mutations
-    // au cas où le bouton serait injecté après le chargement initial
-    if (tryHook()) return;
+    // Écoute au niveau document en phase de capture :
+    // s'exécute AVANT le système kenta-toggleable, quel que soit l'ordre de chargement.
+    document.addEventListener('click', function (e) {
+      var target = e.target.closest('.kenta-search-button');
+      if (!target) return;
 
-    const observer = new MutationObserver(function () {
-      if (tryHook()) observer.disconnect();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
 
-    // Sécurité : on arrête d'observer après 5s
-    setTimeout(function () { observer.disconnect(); }, 5000);
-  }
+      // Fermer la modal Kenta si elle s'ouvre quand même en parallèle
+      setTimeout(function () {
+        var kentaModal = document.getElementById('kenta-search-modal');
+        if (kentaModal) {
+          kentaModal.style.display = 'none';
+          kentaModal.setAttribute('aria-hidden', 'true');
+        }
+      }, 0);
 
-  function tryHook() {
-    for (const sel of SEARCH_BTN_SELECTORS) {
-      const btn = document.querySelector(sel);
-      if (btn) {
-        btn.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          openOverlay();
-        }, true);
-        return true;
-      }
-    }
-    return false;
+      openOverlay();
+    }, true); // true = phase de capture
   }
 
   // ── Construire l'overlay (une seule fois) ─────────────────
@@ -104,8 +102,8 @@
         <div class="ro-count" id="ro-count"></div>
         <div class="ro-logic" id="ro-logic" aria-label="Logique de filtrage">
           <span class="ro-logic-label">Logique :</span>
-          <button class="ro-logic-btn ro-active" id="ro-btn-or">OU</button>
-          <button class="ro-logic-btn" id="ro-btn-and">ET</button>
+          <button class="ro-logic-btn" id="ro-btn-or">OU</button>
+          <button class="ro-logic-btn ro-active" id="ro-btn-and">ET</button>
         </div>
       </div>
 
@@ -239,7 +237,7 @@
     });
 
     var sorted = Object.keys(counts).sort(function (a, b) {
-      return counts[b] - counts[a];
+      return a.localeCompare(b, 'fr');
     });
 
     var container = document.getElementById('ro-tags');
@@ -299,16 +297,26 @@
     applyFilters();
   }
 
+  // ── Normalisation : accents + pluriel simple ──────────────
+  function normalize(str) {
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')  // supprime les diacritiques
+      .replace(/\b(\w{3,})s\b/g, '$1'); // retire le s final (pluriel simple)
+  }
+
   // ── Filtrage ──────────────────────────────────────────────
   function applyFilters() {
-    var q    = query;
+    var q    = normalize(query);
     var tags = activeTags;
 
     filtered = allData.filter(function (r) {
-      // Filtre texte
+    // Filtre texte — chaque mot doit être présent (logique ET)
       if (q) {
-        var hay = (r.titre + ' ' + r.desc).toLowerCase();
-        if (hay.indexOf(q) === -1) return false;
+        var hay = normalize(r.titre + ' ' + r.desc);
+        var words = q.split(/\s+/).filter(Boolean);
+        if (!words.every(function (w) { return hay.indexOf(w) !== -1; })) return false;
       }
       // Filtre catégories
       if (tags.size > 0) {
