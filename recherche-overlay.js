@@ -162,6 +162,23 @@
       page++;
       renderCards(false);
     });
+
+    // Intercepter le formulaire de recherche WordPress (sidebar)
+    document.addEventListener('submit', function (e) {
+      var form = e.target.closest('.widget_search form, .wp-block-search form');
+      if (!form) return;
+      e.preventDefault();
+      var input = form.querySelector('input[type="search"], input[type="text"]');
+      var val = input ? input.value.trim() : '';
+      openOverlay();
+      setTimeout(function () {
+        var ro = document.getElementById('ro-search');
+        if (ro && val) {
+          ro.value = val;
+          ro.dispatchEvent(new Event('input'));
+        }
+      }, 100);
+    }, true);
   }
 
   // ── Ouvrir / fermer ───────────────────────────────────────
