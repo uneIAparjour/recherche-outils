@@ -80,30 +80,34 @@
 
     el.innerHTML = `
       <div id="ro-header">
-        <div class="ro-top-bar">
-          <span class="ro-site-name">Une IA par jour</span>
-          <button id="ro-close" aria-label="Fermer la recherche">Fermer ✕</button>
-        </div>
-        <div class="ro-search-wrap">
-          <span class="ro-search-icon" aria-hidden="true">🔍</span>
-          <input type="search" id="ro-search"
-            placeholder="Rechercher un outil, une description…"
-            autocomplete="off" spellcheck="false"
-            aria-label="Recherche textuelle">
-          <button id="ro-clear" aria-label="Effacer la recherche">✕</button>
-        </div>
-        <div class="ro-tags-row">
-          <span class="ro-tags-label" aria-hidden="true">Catégories</span>
-          <div class="ro-tags-list" id="ro-tags" role="group" aria-label="Filtrer par catégorie"></div>
+        <div class="ro-header-inner">
+          <div class="ro-top-bar">
+            <span class="ro-site-name">Une IA par jour</span>
+            <button id="ro-close" aria-label="Fermer la recherche">Fermer ✕</button>
+          </div>
+          <div class="ro-search-wrap">
+            <span class="ro-search-icon" aria-hidden="true">🔍</span>
+            <input type="search" id="ro-search"
+              placeholder="Rechercher un outil, une description…"
+              autocomplete="off" spellcheck="false"
+              aria-label="Recherche textuelle">
+            <button id="ro-clear" aria-label="Effacer la recherche">✕</button>
+          </div>
+          <div class="ro-tags-row">
+            <span class="ro-tags-label" aria-hidden="true">Catégories</span>
+            <div class="ro-tags-list" id="ro-tags" role="group" aria-label="Filtrer par catégorie"></div>
+          </div>
         </div>
       </div>
 
       <div id="ro-status">
-        <div class="ro-count" id="ro-count"></div>
-        <div class="ro-logic" id="ro-logic" aria-label="Logique de filtrage">
-          <span class="ro-logic-label">Logique :</span>
-          <button class="ro-logic-btn" id="ro-btn-or">OU</button>
-          <button class="ro-logic-btn ro-active" id="ro-btn-and">ET</button>
+        <div class="ro-status-inner">
+          <div class="ro-count" id="ro-count"></div>
+          <div class="ro-logic" id="ro-logic" aria-label="Logique de filtrage">
+            <span class="ro-logic-label">Logique :</span>
+            <button class="ro-logic-btn" id="ro-btn-or">OU</button>
+            <button class="ro-logic-btn ro-active" id="ro-btn-and">ET</button>
+          </div>
         </div>
       </div>
 
@@ -113,9 +117,11 @@
           <strong>Chargement de la base…</strong>
           Récupération depuis GitHub
         </div>
-        <div id="ro-grid" role="list" aria-label="Résultats de recherche"></div>
-        <div id="ro-more-wrap">
-          <button id="ro-more">Afficher plus de résultats</button>
+        <div class="ro-grid-wrap">
+          <div id="ro-grid" role="list" aria-label="Résultats de recherche"></div>
+          <div id="ro-more-wrap">
+            <button id="ro-more">Afficher plus de résultats</button>
+          </div>
         </div>
       </div>
     `;
