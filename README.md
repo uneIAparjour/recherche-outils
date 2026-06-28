@@ -1,55 +1,61 @@
-# recherche-outils
+# Voyage au pays du non-écrit
 
-Moteur de recherche multi-catégories pour [uneiaparjour.fr](https://www.uneiaparjour.fr).
+Audit des implicites, sous-textes et angles morts dans une réponse de modèle de langage.
 
-## Fonctionnement
+## Le problème
 
-Un overlay plein écran s'ouvre au clic sur la loupe du thème WordPress (Kenta Artistic Blog). Il permet de rechercher parmi toutes les publications d'applications référencées sur le site, avec :
+La réponse d'un LLM, aussi vraisemblable soit-elle, comporte des manques : des implicites que le modèle tient pour acquis, des conclusions logiques qu'il ne tire pas, des angles qu'il n'aborde pas. Ces non-dits sont invisibles pour l'utilisateur et c'est précisément ce que la délégation à la machine rend justement visible.
 
-- **Recherche textuelle** sur le titre et la description, avec surbrillance des occurrences
-- **Recherche multi-mots** : chaque mot saisi doit être présent (logique ET implicite)
-- **Insensibilité aux accents** : "edition" trouve "édition" et inversement
-- **Tolérance au pluriel** : "image" trouve "images" et inversement
-- **Filtrage par catégories** (tags cliquables, multi-sélection, triés alphabétiquement)
-- **Logique ET / OU** entre les catégories sélectionnées (visible dès 2 tags actifs, ET par défaut)
-- **Pagination** par blocs de 48 résultats
-- Clic sur un tag dans une carte → active immédiatement ce filtre
+## L'approche
 
-Les données sont chargées à l'ouverture depuis le CSV du dépôt [`uneIAparjour/base`](https://github.com/uneIAparjour/base) (mis à jour automatiquement chaque nuit).
+L'outil s'appuie sur une taxonomie de l'implicite issue de l'ontologie Wikidata, formalisée par [Arthur Sarazin](https://www.linkedin.com/pulse/voyage-au-pays-du-non-%C3%A9crit-arthur-sarazin-phd-hwswe). Chaque réponse est auditée selon 6 catégories :
 
-## Fichiers
-
-| Fichier | Rôle |
+| Catégorie | Ce qu'elle révèle |
 |---|---|
-| `recherche-overlay.css` | Styles de l'overlay |
-| `recherche-overlay.js`  | Logique : chargement CSV, filtres, rendu |
-| `functions-snippet.php` | Extrait à ajouter dans `functions.php` du thème enfant |
+| **Connotation** | Charges affectives et jugements de valeur portés par le choix des mots |
+| **Sous-texte** | Message implicite véhiculé par le ton, la posture ou la mise en scène du propos |
+| **Implicature** | Ce que le texte laisse entendre sans l'affirmer, par sous-entendu logique |
+| **De facto** | Affirmations présentées comme des faits établis, sans source ni nuance |
+| **Détail d'implémentation** | Conditions matérielles ou organisationnelles passées sous silence |
+| **Omission pure** | Dimensions absentes du texte alors qu'elles sont structurantes pour le sujet |
 
-## Installation
+## Utilisation
 
-1. Copier `recherche-overlay.css` et `recherche-overlay.js` à la racine du dossier du thème enfant, pour uneIAparjour.fr : wp-content/themes/kenta-artistic-blog
+Collez une réponse produite par un modèle de langage (ChatGPT, Claude, Gemini, Mistral…) et, optionnellement, la question qui l'a produite. L'outil révèle les non-dits et produit :
 
-2. Ajouter le contenu de `functions-snippet.php` à la fin de `functions.php` du thème enfant.
+- une **synthèse** identifiant le principal angle mort et ses conséquences
+- un **audit détaillé** par catégorie avec infobulles explicatives
+- une **instruction de correction** prête à copier-coller pour renvoyer au modèle d'origine
+- un **export Markdown** de l'ensemble des résultats
 
-3. Vider le cache après chaque mise à jour des fichiers JS/CSS. Pour uneIaparjour.fr, depuis WP Super Cache.
+## Déploiement
 
-## Source de données
+L'application tourne sur [Streamlit Cloud](https://streamlit.io/cloud) et utilise le modèle `mistralai/Mistral-Small-3.2-24B-Instruct-2506` via l'[API Albert](https://albert.api.etalab.gouv.fr).
 
+### En local
+
+```bash
+pip install -r requirements.txt
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+# Renseigner ALBERT_API_KEY dans secrets.toml
+streamlit run app.py
 ```
-https://raw.githubusercontent.com/uneIAparjour/base/main/base-uneiaparjour.csv
+
+### Sur Streamlit Cloud
+
+1. Connecter le repo GitHub
+2. Pointer sur `app.py`
+3. Dans **Settings → Secrets**, ajouter :
+
+```toml
+ALBERT_API_KEY = "votre-clé"
 ```
 
-Mise à jour automatique chaque nuit via le workflow `nightly-update.yml` du dépôt [`uneIAparjour/base`](https://github.com/uneIAparjour/base).
+## Crédits
 
-## Compatibilité et points techniques
-
-- Thème : **Kenta Artistic Blog** (WP Moose)
-- Sélecteur de la loupe : `.kenta-search-button` (classe native du thème)
-- Interception via écoute `document` en phase de capture (`true`) pour passer avant le système `kenta-toggleable` natif, qui ouvre normalement `#kenta-search-modal`
-- La modal Kenta est refermée immédiatement via `setTimeout` si elle s'ouvre en parallèle
-- PapaParse chargé via CDN (cdnjs.cloudflare.com), en footer
-- **Cache** : le cache doit être vidé après chaque déploiement d'une nouvelle version JS
+- Taxonomie de l'implicite : [Arthur Sarazin](https://www.linkedin.com/pulse/voyage-au-pays-du-non-%C3%A9crit-arthur-sarazin-phd-hwswe)
+- Modèle : `mistralai/Mistral-Small-3.2-24B-Instruct-2506` via l'[API Albert](https://albert.api.etalab.gouv.fr) (DINUM / Etalab)
 
 ## Licence
 
-CC BY 4.0 — Bertrand Formet
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — Bertrand Formet pour [uneIAparjour.fr](https://uneIAparjour.fr)
