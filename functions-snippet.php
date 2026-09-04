@@ -33,8 +33,20 @@ add_action( 'wp_enqueue_scripts', function () {
         'recherche-overlay',
         get_stylesheet_directory_uri() . '/recherche-overlay.js',
         [ 'papaparse' ],
-        '1.0.0',
+        '1.1.0',
         true // chargé en footer
     );
+
+    // Langue + CSV correspondant, lus par recherche-overlay.js (roConfig).
+    // EN : base-en (uneIAparjour/base-en, mirroir anglais dérivé de la
+    // traduction). FR (et repli si Polylang n'est pas actif) : base FR
+    // historique, inchangée.
+    $lang = function_exists( 'pll_current_language' ) ? pll_current_language() : 'fr';
+    wp_localize_script( 'recherche-overlay', 'roConfig', [
+        'lang'   => $lang,
+        'csvUrl' => $lang === 'en'
+            ? 'https://raw.githubusercontent.com/uneIAparjour/base-en/main/base-uneiaparjour-en.csv'
+            : 'https://raw.githubusercontent.com/uneIAparjour/base/main/base-uneiaparjour.csv',
+    ] );
 
 }, 20 );

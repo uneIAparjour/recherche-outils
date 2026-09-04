@@ -5,29 +5,78 @@
  * avec recherche texte + filtres multi-catégories sur la base CSV.
  *
  * Dépendances : PapaParse (chargé via functions.php)
- * Données     : base-uneiaparjour.csv (GitHub raw)
+ * Données     : base-uneiaparjour.csv en FR, base-uneiaparjour-en.csv en EN
+ *               (GitHub raw) — langue et URL fournies par functions-snippet.php
+ *               via window.roConfig (wp_localize_script).
  */
 
 (function () {
   'use strict';
 
   // ── Config ────────────────────────────────────────────────
-  const CSV_URL  = 'https://raw.githubusercontent.com/uneIAparjour/base/main/base-uneiaparjour.csv';
+  const CONFIG   = window.roConfig || {};
+  const LANG     = CONFIG.lang === 'en' ? 'en' : 'fr';
+  const CSV_URL  = CONFIG.csvUrl || 'https://raw.githubusercontent.com/uneIAparjour/base/main/base-uneiaparjour.csv';
   const PAGE_SZ  = 48;
 
-  // Sélecteurs possibles pour la loupe Kenta (ordre de priorité)
-  const SEARCH_BTN_SELECTORS = [
-    '.kenta-search-button',
-    'a:has(.fa-magnifying-glass)',
-    'button:has(.fa-magnifying-glass)',
-    '.kenta-action-search',
-    '.kenta-header-search',
-    '[data-element="search"]',
-    '.header-search-toggle',
-    '.search-toggle',
-    'button[aria-label*="search" i]',
-    'button[aria-label*="recherche" i]',
-  ];
+  // ── Textes de l'interface, FR/EN ───────────────────────────
+  const I18N = {
+    fr: {
+      dialogLabel:    'Recherche dans la base des outils IA',
+      close:          'Fermer ✕',
+      closeLabel:     'Fermer la recherche',
+      searchPlaceholder: 'Rechercher un outil, une description…',
+      searchLabel:    'Recherche textuelle',
+      clearLabel:     'Effacer la recherche',
+      categories:     'Catégories',
+      categoriesLabel:'Filtrer par catégorie',
+      resultsLabel:   'Résultats de recherche',
+      logicLabel:     'Logique de filtrage',
+      logic:          'Logique :',
+      or:             'OU',
+      and:            'ET',
+      loading:        'Chargement de la base…',
+      loadingSub:     'Récupération depuis GitHub',
+      more:           'Afficher plus de résultats',
+      moreN:          function (n, remaining) { return 'Afficher ' + n + ' résultats de plus (' + remaining + ' restants)'; },
+      clearAll:       'Tout effacer',
+      countAll:       function (total) { return total + ' outils'; },
+      countFiltered:  function (n, total) { return n + ' résultat' + (n > 1 ? 's' : '') + ' sur ' + total + ' outils'; },
+      noResults:      'Aucun résultat',
+      noResultsSub:   "Essayez d'autres termes ou retirez des filtres.",
+      view:           'Voir',
+      loadError:      function (msg) { return 'Impossible de charger la base : ' + msg; },
+      locale:         'fr',
+    },
+    en: {
+      dialogLabel:    'Search the AI tools database',
+      close:          'Close ✕',
+      closeLabel:     'Close search',
+      searchPlaceholder: 'Search a tool, a description…',
+      searchLabel:    'Text search',
+      clearLabel:     'Clear search',
+      categories:     'Categories',
+      categoriesLabel:'Filter by category',
+      resultsLabel:   'Search results',
+      logicLabel:     'Filter logic',
+      logic:          'Logic:',
+      or:             'OR',
+      and:            'AND',
+      loading:        'Loading the database…',
+      loadingSub:     'Fetching from GitHub',
+      more:           'Show more results',
+      moreN:          function (n, remaining) { return 'Show ' + n + ' more results (' + remaining + ' remaining)'; },
+      clearAll:       'Clear all',
+      countAll:       function (total) { return total + ' tools'; },
+      countFiltered:  function (n, total) { return n + ' result' + (n > 1 ? 's' : '') + ' of ' + total + ' tools'; },
+      noResults:      'No results',
+      noResultsSub:   'Try different terms or remove filters.',
+      view:           'View',
+      loadError:      function (msg) { return 'Unable to load the database: ' + msg; },
+      locale:         'en',
+    },
+  };
+  const T = I18N[LANG];
 
   // ── État ──────────────────────────────────────────────────
   let allData    = [];
@@ -76,26 +125,26 @@
     el.id = 'ro-overlay';
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-modal', 'true');
-    el.setAttribute('aria-label', 'Recherche dans la base des outils IA');
+    el.setAttribute('aria-label', T.dialogLabel);
 
     el.innerHTML = `
       <div id="ro-header">
         <div class="ro-header-inner">
           <div class="ro-top-bar">
             <span class="ro-site-name">Une IA par jour</span>
-            <button id="ro-close" aria-label="Fermer la recherche">Fermer ✕</button>
+            <button id="ro-close" aria-label="${T.closeLabel}">${T.close}</button>
           </div>
           <div class="ro-search-wrap">
             <span class="ro-search-icon" aria-hidden="true">🔍</span>
             <input type="search" id="ro-search"
-              placeholder="Rechercher un outil, une description…"
+              placeholder="${T.searchPlaceholder}"
               autocomplete="off" spellcheck="false"
-              aria-label="Recherche textuelle">
-            <button id="ro-clear" aria-label="Effacer la recherche">✕</button>
+              aria-label="${T.searchLabel}">
+            <button id="ro-clear" aria-label="${T.clearLabel}">✕</button>
           </div>
           <div class="ro-tags-row">
-            <span class="ro-tags-label" aria-hidden="true">Catégories</span>
-            <div class="ro-tags-list" id="ro-tags" role="group" aria-label="Filtrer par catégorie"></div>
+            <span class="ro-tags-label" aria-hidden="true">${T.categories}</span>
+            <div class="ro-tags-list" id="ro-tags" role="group" aria-label="${T.categoriesLabel}"></div>
           </div>
         </div>
       </div>
@@ -103,10 +152,10 @@
       <div id="ro-status">
         <div class="ro-status-inner">
           <div class="ro-count" id="ro-count"></div>
-          <div class="ro-logic" id="ro-logic" aria-label="Logique de filtrage">
-            <span class="ro-logic-label">Logique :</span>
-            <button class="ro-logic-btn" id="ro-btn-or">OU</button>
-            <button class="ro-logic-btn ro-active" id="ro-btn-and">ET</button>
+          <div class="ro-logic" id="ro-logic" aria-label="${T.logicLabel}">
+            <span class="ro-logic-label">${T.logic}</span>
+            <button class="ro-logic-btn" id="ro-btn-or">${T.or}</button>
+            <button class="ro-logic-btn ro-active" id="ro-btn-and">${T.and}</button>
           </div>
         </div>
       </div>
@@ -114,13 +163,13 @@
       <div id="ro-body">
         <div class="ro-state" id="ro-state">
           <div class="ro-loader"></div>
-          <strong>Chargement de la base…</strong>
-          Récupération depuis GitHub
+          <strong>${T.loading}</strong>
+          ${T.loadingSub}
         </div>
         <div class="ro-grid-wrap">
-          <div id="ro-grid" role="list" aria-label="Résultats de recherche"></div>
+          <div id="ro-grid" role="list" aria-label="${T.resultsLabel}"></div>
           <div id="ro-more-wrap">
-            <button id="ro-more">Afficher plus de résultats</button>
+            <button id="ro-more">${T.more}</button>
           </div>
         </div>
       </div>
@@ -235,12 +284,12 @@
         });
       })
       .catch(function (err) {
-        showError('Impossible de charger la base : ' + err.message);
+        showError(T.loadError(err.message));
       });
   }
 
   // ── Parsing d'une ligne CSV ───────────────────────────────
-  // Colonnes : Titre | Description | URL article | Cat1→6 | Date
+  // Colonnes (même ordre en FR et en EN) : Titre | Description | URL article | Cat1→6 | Date
   function parseRow(row) {
     var vals = Object.keys(row).map(function (k) { return (row[k] || '').trim(); });
     return {
@@ -260,7 +309,7 @@
     });
 
     var sorted = Object.keys(counts).sort(function (a, b) {
-      return a.localeCompare(b, 'fr');
+      return a.localeCompare(b, T.locale);
     });
 
     var container = document.getElementById('ro-tags');
@@ -275,11 +324,11 @@
       container.appendChild(btn);
     });
 
-    // Bouton "Tout effacer"
+    // Bouton "Tout effacer" / "Clear all"
     var reset = document.createElement('button');
     reset.className   = 'ro-tag-reset';
     reset.id          = 'ro-tag-reset';
-    reset.textContent = 'Tout effacer';
+    reset.textContent = T.clearAll;
     reset.addEventListener('click', clearTags);
     container.appendChild(reset);
   }
@@ -321,6 +370,9 @@
   }
 
   // ── Normalisation : accents + pluriel simple ──────────────
+  // Règle volontairement simple (retire un "s" final) — s'applique
+  // raisonnablement aux deux langues (pluriels réguliers FR et EN),
+  // pas parfaite sur les pluriels irréguliers dans aucune des deux.
   function normalize(str) {
     return str
       .toLowerCase()
@@ -369,9 +421,9 @@
     var n     = filtered.length;
     if (!total) { el.innerHTML = ''; return; }
     if (n === total) {
-      el.innerHTML = '<span>' + total + '</span> outils';
+      el.innerHTML = T.countAll(total);
     } else {
-      el.innerHTML = '<span>' + n + '</span> résultat' + (n > 1 ? 's' : '') + ' sur ' + total + ' outils';
+      el.innerHTML = T.countFiltered(n, total);
     }
   }
 
@@ -390,8 +442,8 @@
     if (filtered.length === 0) {
       stateEl.innerHTML =
         '<div class="ro-icon">🔍</div>' +
-        '<strong>Aucun résultat</strong>' +
-        'Essayez d\'autres termes ou retirez des filtres.';
+        '<strong>' + T.noResults + '</strong>' +
+        T.noResultsSub;
       stateEl.style.display = 'block';
       moreWrap.style.display = 'none';
       return;
@@ -414,7 +466,7 @@
       }).join('');
 
       var linkHtml = r.url
-        ? '<a class="ro-card-link" href="' + esc(r.url) + '" target="_blank" rel="noopener">Voir</a>'
+        ? '<a class="ro-card-link" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + T.view + '</a>'
         : '';
 
       card.innerHTML =
@@ -443,8 +495,7 @@
     moreWrap.style.display = hasMore ? 'block' : 'none';
     if (hasMore) {
       var remaining = filtered.length - end;
-      document.getElementById('ro-more').textContent =
-        'Afficher ' + Math.min(PAGE_SZ, remaining) + ' résultats de plus (' + remaining + ' restants)';
+      document.getElementById('ro-more').textContent = T.moreN(Math.min(PAGE_SZ, remaining), remaining);
     }
   }
 
